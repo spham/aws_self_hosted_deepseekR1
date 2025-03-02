@@ -1,0 +1,98 @@
+stages:
+  - validate
+  - plan
+  - apply
+  - deploy
+  - destroy
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}/terraform
+  ANSIBLE_ROOT: ${CI_PROJECT_DIR}/ansible
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+  AWS_DEFAULT_REGION: "eu-west-1"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - ${TF_ROOT}/.terraform
+
+before_script:
+  - cd ${TF_ROOT}
+
+# Validation de la syntaxe Terraform
+validate:
+  stage: validate
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init -backend=false
+    - terraform validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+# Planification des changements Terraform
+plan:
+  stage: plan
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform plan -out=tfplan
+  artifacts:
+    paths:
+      - ${TF_ROOT}/tfplan
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+# Application des changements Terraform
+apply:
+  stage: apply
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform apply -auto-approve tfplan
+    - terraform output -json > ${CI_PROJECT_DIR}/terraform_output.json
+  artifacts:
+    paths:
+      - ${CI_PROJECT_DIR}/terraform_output.json
+    expire_in: 1 week
+  dependencies:
+    - plan
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Déploiement avec Ansible
+deploy:
+  stage: deploy
+  image: cytopia/ansible:latest
+  script:
+    - cd ${ANSIBLE_ROOT}
+    - mkdir -p ~/.ssh
+    - echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - export PUBLIC_IP=$(cat ${CI_PROJECT_DIR}/terraform_output.json | jq -r '.public_ip.value')
+    - echo "ollama_instances:" > inventory.yml
+    - echo "  hosts:" >> inventory.yml
+    - echo "    ollama-1:" >> inventory.yml
+    - echo "      ansible_host: ${PUBLIC_IP}" >> inventory.yml
+    - echo "      ansible_user: ubuntu" >> inventory.yml
+    - echo "      ansible_ssh_private_key_file: ~/.ssh/id_rsa" >> inventory.yml
+    - echo "      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'" >> inventory.yml
+    - ansible-playbook -i inventory.yml playbook.yml
+  dependencies:
+    - apply
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Destruction de l'infrastructure
+destroy:
+  stage: destroy
+  image: hashicorp/terraform:latest
+  script:
+    - terraform init
+    - terraform destroy -auto-approve
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"' 
