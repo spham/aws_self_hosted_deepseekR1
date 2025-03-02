@@ -1,0 +1,127 @@
+h1. Projet DeepSeek R1 sur AWS EC2 avec Terraform et Ansible
+
+h2. Objectif du Projet
+
+p. Déploiement automatisé de DeepSeek R1 sur une instance AWS EC2 g5.xlarge en utilisant une approche Infrastructure as Code (IaC). Le projet utilise des instances spot pour optimiser les coûts.
+
+h2. Architecture
+
+* *Infrastructure*: AWS EC2 g5.xlarge (GPU)
+* *Modèle*: DeepSeek R1 via Ollama
+* *Interface*: UI Web Next.js
+* *Outils IaC*: Terraform + Ansible
+
+h2. Prérequis
+
+* AWS CLI configuré
+* Terraform >= 1.0
+* Ansible >= 2.9
+* Paire de clés SSH AWS
+* AMI Ubuntu 24.04 LTS ARM64
+
+h2. Structure du Projet
+
+bc. 
+project/
+├── terraform/
+│   ├── main.tf         # Configuration EC2 et sécurité
+│   ├── variables.tf    # Variables Terraform
+│   └── outputs.tf      # Outputs (IP, DNS, etc.)
+└── ansible/
+    ├── inventory.yml   # Inventaire des hôtes
+    ├── playbook.yml    # Playbook principal
+    └── roles/
+        └── ollama/     # Rôle pour DeepSeek/Ollama
+
+h2. Déploiement
+
+h3. 1. Préparation des variables
+
+bc. 
+# Créer un fichier terraform.tfvars
+aws_region     = "us-east-1"
+ami_id         = "ami-xxxxx"  # AMI Ubuntu 24.04 ARM64
+key_name       = "votre-key"
+allowed_ip     = "x.x.x.x/32" # Votre IP CIDR
+max_spot_price = "0.5"        # Prix max instance spot
+
+h3. 2. Déploiement de l'infrastructure
+
+bc. 
+cd terraform
+terraform init
+terraform plan
+terraform apply
+
+h3. 3. Configuration de l'inventaire Ansible
+
+bc. 
+# ansible/inventory.yml
+ollama_instances:
+  hosts:
+    ollama-1:
+      ansible_host: <EC2_PUBLIC_IP>  # Utiliser l'output Terraform
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: /path/to/key.pem
+
+h3. 4. Déploiement de l'application
+
+bc. 
+cd ../ansible
+ansible-playbook -i inventory.yml playbook.yml
+
+h2. Optimisation des Coûts
+
+* Instance Spot EC2 (économie jusqu'à 90%)
+* Volume gp3 pour un meilleur rapport coût/performance
+* Sécurité groupe restreint aux IPs nécessaires
+
+h2. Monitoring
+
+* PM2 pour la gestion des processus Node.js
+* CloudWatch pour les métriques EC2
+* Logs Ollama dans @/var/log/ollama@
+
+h2. Arrêt des Ressources
+
+bc. 
+cd terraform
+terraform destroy
+
+h2. Points d'Attention
+
+h3. Coûts:
+* Instance g5.xlarge (~0.50$/h en spot)
+* Stockage gp3 100GB (~10$/mois)
+
+h3. Sécurité:
+* Accès limité par IP
+* Ports exposés: 22 (SSH), 3000 (UI)
+
+h3. Performance:
+* Modèle ~20GB en RAM
+* Temps de démarrage ~5-10min
+
+h2. Maintenance
+
+h3. Mise à jour du modèle:
+
+bc. ollama pull deepseek-r1:latest
+
+h3. Redémarrage de l'UI:
+
+bc. pm2 restart ollama-ui
+
+h2. Documentation Additionnelle
+
+* "Ollama Documentation":https://ollama.ai/docs
+* "DeepSeek R1 Model":https://github.com/deepseek-ai/DeepSeek-LLM
+* "Next.js Ollama UI":https://github.com/jakobhoeg/nextjs-ollama-llm-ui
+
+h2. Contribution
+
+# Fork le projet
+# Créer une branche (@git checkout -b feature/amelioration@)
+# Commit (@git commit -am 'Ajout de fonctionnalité'@)
+# Push (@git push origin feature/amelioration@)
+# Créer une Pull Request 
