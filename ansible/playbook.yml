@@ -1,5 +1,44 @@
 ---
-- hosts: ollama_instances
-  become: yes
+- name: Déploiement de DeepSeek R1 avec Ollama
+  hosts: tag_Name_ollama_deepseek
+  become: true
+  gather_facts: true
+  
+  pre_tasks:
+    - name: Attendre que l'instance soit complètement démarrée
+      wait_for_connection:
+        timeout: 300
+        delay: 5
+      
+    - name: Mise à jour du cache apt
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+  
   roles:
-    - ollama 
+    - role: ollama
+      tags: [ollama]
+  
+  post_tasks:
+    - name: Vérifier que Ollama est en cours d'exécution
+      ansible.builtin.service:
+        name: ollama
+        state: started
+      register: ollama_status
+      
+    - name: Afficher l'état d'Ollama
+      ansible.builtin.debug:
+        var: ollama_status
+        
+    - name: Vérifier que l'UI est en cours d'exécution
+      ansible.builtin.shell: pm2 status
+      register: pm2_status
+      changed_when: false
+      
+    - name: Afficher l'état de l'UI
+      ansible.builtin.debug:
+        var: pm2_status.stdout_lines
+        
+    - name: Afficher l'URL de l'interface utilisateur
+      ansible.builtin.debug:
+        msg: "L'interface utilisateur est disponible à l'adresse: http://{{ ansible_host }}:3000" 

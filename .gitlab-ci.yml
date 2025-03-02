@@ -93,27 +93,103 @@ deploy:
   stage: deploy
   image: python:${PYTHON_VERSION}-slim
   before_script:
-    - apt-get update && apt-get install -y openssh-client jq
-    - pip install ansible==${ANSIBLE_VERSION}
+    - apt-get update && apt-get install -y openssh-client jq awscli
+    - pip install ansible==${ANSIBLE_VERSION} boto3 botocore
+    # Installation des collections Ansible nécessaires
+    - ansible-galaxy collection install amazon.aws
   script:
     - cd ${ANSIBLE_ROOT}
     - mkdir -p ~/.ssh
     - echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - export PUBLIC_IP=$(cat ${CI_PROJECT_DIR}/terraform_output.json | jq -r '.public_ip.value')
-    - echo "ollama_instances:" > inventory.yml
-    - echo "  hosts:" >> inventory.yml
-    - echo "    ollama-1:" >> inventory.yml
-    - echo "      ansible_host: ${PUBLIC_IP}" >> inventory.yml
-    - echo "      ansible_user: ubuntu" >> inventory.yml
-    - echo "      ansible_ssh_private_key_file: ~/.ssh/id_rsa" >> inventory.yml
-    - echo "      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'" >> inventory.yml
-    - ansible-playbook -i inventory.yml playbook.yml
+    
+    # Récupération des outputs Terraform pour les tags
+    - export INSTANCE_ID=$(cat ${CI_PROJECT_DIR}/terraform_output.json | jq -r '.instance_id.value')
+    - export REGION=$(cat ${CI_PROJECT_DIR}/terraform_output.json | jq -r '.region.value')
+    
+    # Vérification que l'instance est bien disponible
+    - |
+      echo "Vérification de l'état de l'instance ${INSTANCE_ID}..."
+      INSTANCE_STATE=$(aws ec2 describe-instances --region ${REGION} --instance-ids ${INSTANCE_ID} --query 'Reservations[0].Instances[0].State.Name' --output text)
+      echo "État de l'instance: ${INSTANCE_STATE}"
+      if [ "${INSTANCE_STATE}" != "running" ]; then
+        echo "L'instance n'est pas en cours d'exécution. Tentative de démarrage..."
+        aws ec2 start-instances --region ${REGION} --instance-ids ${INSTANCE_ID}
+        echo "Attente du démarrage de l'instance..."
+        aws ec2 wait instance-running --region ${REGION} --instance-ids ${INSTANCE_ID}
+      fi
+    
+    # Création du fichier de configuration pour l'inventaire dynamique AWS
+    - |
+      cat > aws_ec2.yml << EOF
+      ---
+      plugin: amazon.aws.aws_ec2
+      regions:
+        - ${REGION}
+      filters:
+        instance-id: "${INSTANCE_ID}"
+      keyed_groups:
+        - key: tags.Name
+          prefix: tag_Name_
+        - key: instance_type
+          prefix: instance_type_
+      hostnames:
+        - ip-address
+      compose:
+        ansible_host: public_ip_address
+      EOF
+    
+    # Création du fichier de configuration Ansible
+    - |
+      cat > ansible.cfg << EOF
+      [defaults]
+      host_key_checking = False
+      inventory = aws_ec2.yml
+      remote_user = ubuntu
+      private_key_file = ~/.ssh/id_rsa
+      
+      [inventory]
+      enable_plugins = amazon.aws.aws_ec2
+      EOF
+    
+    # Attente que l'instance soit accessible via SSH
+    - |
+      echo "Attente que SSH soit disponible..."
+      PUBLIC_IP=$(aws ec2 describe-instances --region ${REGION} --instance-ids ${INSTANCE_ID} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+      for i in $(seq 1 30); do
+        if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@${PUBLIC_IP} "echo SSH disponible"; then
+          echo "SSH est disponible!"
+          break
+        fi
+        if [ $i -eq 30 ]; then
+          echo "Timeout en attendant que SSH soit disponible"
+          exit 1
+        fi
+        echo "Tentative $i/30. Nouvelle tentative dans 10 secondes..."
+        sleep 10
+      done
+    
+    # Test de l'inventaire dynamique
+    - ansible-inventory --graph
+    
+    # Exécution du playbook avec l'inventaire dynamique AWS
+    - ansible-playbook playbook.yml -v
+    
+    # Vérification post-déploiement
+    - |
+      echo "Vérification du déploiement..."
+      ansible all -m shell -a "systemctl status ollama || true"
+      ansible all -m shell -a "pm2 status || true"
   dependencies:
     - apply
   when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    paths:
+      - ${ANSIBLE_ROOT}/aws_ec2.yml
+      - ${ANSIBLE_ROOT}/ansible.cfg
+    expire_in: 1 week
 
 # Destruction de l'infrastructure
 destroy:
