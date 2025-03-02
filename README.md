@@ -282,11 +282,12 @@ server {
 * Vérifiez régulièrement les vulnérabilités dans les dépendances
 * Ajoutez cette tâche à votre playbook Ansible:
 
-```
+```yml
 - name: Configuration des mises à jour de sécurité automatiques
   ansible.builtin.apt:
     name: unattended-upgrades
     state: present
+    
 - name: Activation des mises à jour automatiques
   ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/20auto-upgrades
