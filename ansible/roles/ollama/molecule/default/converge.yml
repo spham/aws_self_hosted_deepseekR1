@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: "Include ollama role"
+      include_role:
+        name: "ollama"
+      vars:
+        # Simuler l'installation sans télécharger le modèle complet
+        skip_model_download: true 

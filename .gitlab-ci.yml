@@ -1,4 +1,5 @@
 stages:
+  - test
   - validate
   - plan
   - apply
@@ -17,14 +18,27 @@ cache:
   paths:
     - ${TF_ROOT}/.terraform
 
-before_script:
-  - cd ${TF_ROOT}
+# Tests unitaires
+test:
+  stage: test
+  image: golang:1.20
+  before_script:
+    - apt-get update && apt-get install -y python3-pip
+    - pip install molecule molecule-docker ansible
+    - cd ${TF_ROOT}/test && go mod download
+  script:
+    - cd ${CI_PROJECT_DIR}
+    - chmod +x scripts/run_tests.sh
+    - ./scripts/run_tests.sh
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
 
 # Validation de la syntaxe Terraform
 validate:
   stage: validate
   image: hashicorp/terraform:latest
   script:
+    - cd ${TF_ROOT}
     - terraform init -backend=false
     - terraform validate
   rules:
@@ -35,6 +49,7 @@ plan:
   stage: plan
   image: hashicorp/terraform:latest
   script:
+    - cd ${TF_ROOT}
     - terraform init
     - terraform plan -out=tfplan
   artifacts:
@@ -49,6 +64,7 @@ apply:
   stage: apply
   image: hashicorp/terraform:latest
   script:
+    - cd ${TF_ROOT}
     - terraform init
     - terraform apply -auto-approve tfplan
     - terraform output -json > ${CI_PROJECT_DIR}/terraform_output.json
@@ -91,6 +107,7 @@ destroy:
   stage: destroy
   image: hashicorp/terraform:latest
   script:
+    - cd ${TF_ROOT}
     - terraform init
     - terraform destroy -auto-approve
   when: manual

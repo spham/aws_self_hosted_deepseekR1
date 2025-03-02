@@ -1,0 +1,51 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Vérifier que Ollama est installé
+      command: which ollama
+      register: ollama_check
+      changed_when: false
+      failed_when: ollama_check.rc != 0
+
+    - name: Vérifier que Node.js est installé
+      shell: source ~/.nvm/nvm.sh && node -v
+      args:
+        executable: /bin/bash
+      register: node_check
+      changed_when: false
+      failed_when: node_check.rc != 0
+
+    - name: Vérifier que PM2 est installé
+      shell: source ~/.nvm/nvm.sh && pm2 -v
+      args:
+        executable: /bin/bash
+      register: pm2_check
+      changed_when: false
+      failed_when: pm2_check.rc != 0
+
+    - name: Vérifier que le répertoire de l'UI existe
+      stat:
+        path: /opt/nextjs-ollama-llm-ui
+      register: ui_dir
+      failed_when: not ui_dir.stat.exists
+
+    - name: Vérifier que le script d'arrêt automatique existe
+      stat:
+        path: /usr/local/bin/auto-shutdown.sh
+      register: shutdown_script
+      failed_when: not shutdown_script.stat.exists
+
+    - name: Vérifier que le script d'arrêt automatique est exécutable
+      file:
+        path: /usr/local/bin/auto-shutdown.sh
+        state: file
+      register: script_mode
+      failed_when: not script_mode.mode | regex_search('0755')
+
+    - name: Vérifier que la tâche cron est configurée
+      command: crontab -l
+      register: crontab_content
+      changed_when: false
+      failed_when: "'auto-shutdown' not in crontab_content.stdout" 

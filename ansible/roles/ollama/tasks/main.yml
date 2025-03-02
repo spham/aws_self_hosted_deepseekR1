@@ -4,6 +4,8 @@
     name: 
       - curl
       - git
+      - bc
+      - net-tools
     update_cache: yes
 
 - name: Installation de Ollama
@@ -26,6 +28,7 @@
 
 - name: Téléchargement du modèle DeepSeek R1
   command: ollama pull deepseek-r1
+  when: not skip_model_download | default(false)
 
 - name: Clone du repo UI
   git:
@@ -50,4 +53,7 @@
 - name: Démarrage de l'application avec PM2
   shell: |
     cd /opt/nextjs-ollama-llm-ui
-    pm2 start npm --name "ollama-ui" -- run start 
+    pm2 start npm --name "ollama-ui" -- run start
+
+# Inclure les tâches d'optimisation des coûts
+- include_tasks: cost_optimization.yml 
