@@ -6,18 +6,20 @@ p. Déploiement automatisé de DeepSeek R1 sur une instance AWS EC2 g5.xlarge en
 
 h2. Architecture
 
-* *Infrastructure*: AWS EC2 g5.xlarge (GPU)
+* *Infrastructure*: AWS EC2 g5.xlarge (GPU) en région eu-west-1 (Irlande)
 * *Modèle*: DeepSeek R1 via Ollama
 * *Interface*: UI Web Next.js
-* *Outils IaC*: Terraform + Ansible
+* *Outils IaC*: Terraform 1.11 + Ansible 11
+* *CI/CD*: GitLab CI
 
 h2. Prérequis
 
 * AWS CLI configuré
-* Terraform >= 1.0
-* Ansible >= 2.9
+* Terraform >= 1.11
+* Ansible >= 11.0.0
 * Paire de clés SSH AWS
 * AMI Ubuntu 24.04 LTS ARM64
+* Go 1.21 (pour les tests)
 
 h2. Structure du Projet
 
@@ -26,12 +28,16 @@ project/
 ├── terraform/
 │   ├── main.tf         # Configuration EC2 et sécurité
 │   ├── variables.tf    # Variables Terraform
-│   └── outputs.tf      # Outputs (IP, DNS, etc.)
-└── ansible/
-    ├── inventory.yml   # Inventaire des hôtes
-    ├── playbook.yml    # Playbook principal
-    └── roles/
-        └── ollama/     # Rôle pour DeepSeek/Ollama
+│   ├── outputs.tf      # Outputs (IP, DNS, etc.)
+│   └── test/           # Tests Terraform avec Terratest
+├── ansible/
+│   ├── inventory.yml   # Inventaire des hôtes
+│   ├── playbook.yml    # Playbook principal
+│   └── roles/
+│       └── ollama/     # Rôle pour DeepSeek/Ollama
+│           ├── tasks/  # Tâches Ansible
+│           └── molecule/ # Tests du rôle avec Molecule
+└── .gitlab-ci.yml      # Pipeline CI/CD
 
 h2. Déploiement
 
@@ -69,6 +75,42 @@ h3. 4. Déploiement de l'application
 bc. 
 cd ../ansible
 ansible-playbook -i inventory.yml playbook.yml
+
+h2. Tests
+
+h3. Tests Terraform
+
+bc. 
+cd terraform/test
+go test -v -timeout 30m
+
+h3. Tests Ansible
+
+bc. 
+cd ansible/roles/ollama
+molecule test
+
+h3. Exécution de tous les tests
+
+bc. 
+./scripts/run_tests.sh
+
+h2. Pipeline CI/CD
+
+Le projet inclut une pipeline GitLab CI avec les étapes suivantes:
+
+* *test*: Exécute les tests Terraform et Ansible
+* *validate*: Valide la syntaxe Terraform
+* *plan*: Planifie les changements d'infrastructure
+* *apply*: Applique les changements (manuel)
+* *deploy*: Déploie l'application avec Ansible (manuel)
+* *destroy*: Détruit l'infrastructure (manuel)
+
+h3. Variables d'environnement GitLab CI
+
+* AWS_ACCESS_KEY_ID
+* AWS_SECRET_ACCESS_KEY
+* SSH_PRIVATE_KEY
 
 h2. Optimisation des Coûts
 
@@ -114,11 +156,24 @@ h3. Redémarrage de l'UI:
 
 bc. pm2 restart ollama-ui
 
+h3. Mise à jour des versions:
+
+Pour mettre à jour les versions des outils, modifiez les variables dans @.gitlab-ci.yml@:
+
+bc. 
+TERRAFORM_VERSION: "1.11"
+ANSIBLE_VERSION: "11.0.0"
+MOLECULE_VERSION: "6.0.2"
+GOLANG_VERSION: "1.21"
+PYTHON_VERSION: "3.11"
+
 h2. Documentation Additionnelle
 
 * "Ollama Documentation":https://ollama.ai/docs
 * "DeepSeek R1 Model":https://github.com/deepseek-ai/DeepSeek-LLM
 * "Next.js Ollama UI":https://github.com/jakobhoeg/nextjs-ollama-llm-ui
+* "Terraform Documentation":https://developer.hashicorp.com/terraform/docs
+* "Ansible Documentation":https://docs.ansible.com/
 
 h2. Contribution
 
