@@ -308,6 +308,56 @@ Une documentation complète suivant le framework [Diátaxis](https://diataxis.fr
 
 ## Aperçu du projet
 
-...
+![Architecture du projet](./docs/images/architecture.png)
 
-**Auteur**: Sylvain PHAM
+Ce projet permet de déployer rapidement et de manière reproductible le modèle DeepSeek R1 sur AWS EC2 en utilisant:
+
+- **Terraform** pour provisionner l'infrastructure AWS
+- **Ansible** pour configurer l'instance et déployer Ollama avec DeepSeek R1
+- **Interface Web Next.js** pour interagir avec le modèle via une UI conviviale
+
+### Caractéristiques principales:
+
+- **Optimisation des coûts**: Utilisation d'instances spot EC2 (économie jusqu'à 70%)
+- **Déploiement automatisé**: Infrastructure as Code pour un déploiement reproductible
+- **Sécurité renforcée**: Groupes de sécurité restreints et bonnes pratiques
+- **Maintenance simplifiée**: Scripts et playbooks pour les mises à jour et la maintenance
+- **Tests intégrés**: Tests automatisés pour Terraform et Ansible
+
+### Captures d'écran
+
+![Interface utilisateur](./docs/images/ui-screenshot.png)
+
+*Interface web pour interagir avec DeepSeek R1*
+
+![Dashboard de monitoring](./docs/images/monitoring-dashboard.png)
+
+*Dashboard de monitoring des ressources*
+
+### Performances
+
+Sur une instance g5.xlarge, vous pouvez vous attendre aux performances suivantes:
+
+| Métrique | Valeur |
+|----------|--------|
+| Temps de génération | ~20-30 tokens/seconde |
+| Latence initiale | ~500-800ms |
+| Utilisation mémoire | ~18-20GB |
+| Utilisation GPU | ~90-95% |
+
+### Cas d'utilisation
+
+Ce déploiement est particulièrement adapté pour:
+
+- Développement et test d'applications IA
+- Traitement de données sensibles nécessitant une infrastructure privée
+- Expérimentation avec des modèles d'IA avancés
+- Environnements d'apprentissage et de recherche
+
+## Licence
+
+Ce projet est distribué sous licence MIT. Voir le fichier [LICENSE](./LICENSE) pour plus de détails.
+
+## Contact
+
+Pour toute question ou suggestion, veuillez ouvrir une issue sur ce dépôt ou contacter l'équipe à [email@example.com](mailto:email@example.com).
