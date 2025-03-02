@@ -182,3 +182,98 @@ h2. Contribution
 # Commit (@git commit -am 'Ajout de fonctionnalité'@)
 # Push (@git push origin feature/amelioration@)
 # Créer une Pull Request 
+
+h2. Avertissements de Sécurité
+
+p. *ATTENTION*: Ce projet déploie une infrastructure cloud avec un modèle d'IA puissant. Veuillez prendre en compte les considérations de sécurité suivantes:
+
+h3. Groupes de Sécurité AWS:
+
+* Le groupe de sécurité par défaut n'expose que les ports 22 (SSH) et 3000 (UI Web)
+* *PERSONNALISATION NÉCESSAIRE*: Modifiez la variable @allowed_ip@ pour restreindre l'accès à votre IP uniquement
+* Ne laissez JAMAIS les ports ouverts à toutes les IPs (0.0.0.0/0) en production
+* Exemple de configuration sécurisée:
+
+bc. 
+allowed_ip = "123.45.67.89/32"  # Remplacez par votre IP publique
+
+h3. Authentification:
+
+* L'interface web n'a pas d'authentification par défaut
+* Considérez l'ajout d'une authentification basique ou d'un proxy inverse avec authentification
+* Exemple avec Nginx et authentification basique:
+
+bc. 
+server {
+    listen 80;
+    server_name ollama.example.com;
+    
+    location / {
+        auth_basic "Zone Restreinte";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+
+h3. Clés SSH:
+
+* Utilisez des clés SSH fortes (ED25519 ou RSA 4096 bits minimum)
+* Ne partagez jamais vos clés privées
+* Considérez l'utilisation d'un agent SSH avec des clés protégées par mot de passe
+
+h3. Secrets dans CI/CD:
+
+* Les variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY et SSH_PRIVATE_KEY sont des secrets sensibles
+* Utilisez les variables masquées de GitLab CI
+* Limitez les permissions IAM au strict minimum nécessaire
+* Exemple de politique IAM restrictive:
+
+bc. 
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances",
+        "ec2:TerminateInstances",
+        "ec2:DescribeInstances",
+        "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "eu-west-1"
+        }
+      }
+    }
+  ]
+}
+
+h3. Données Sensibles:
+
+* Le modèle DeepSeek R1 traitera toutes les entrées fournies
+* Ne soumettez pas de données personnelles ou confidentielles
+* Considérez les implications légales (RGPD, etc.) si vous traitez des données d'utilisateurs
+
+h3. Mises à jour de Sécurité:
+
+* Configurez des mises à jour automatiques pour le système d'exploitation
+* Vérifiez régulièrement les vulnérabilités dans les dépendances
+* Ajoutez cette tâche à votre playbook Ansible:
+
+bc. 
+- name: Configuration des mises à jour de sécurité automatiques
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Activation des mises à jour automatiques
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1"; 
