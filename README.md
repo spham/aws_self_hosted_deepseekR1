@@ -309,3 +309,5 @@ Une documentation complète suivant le framework [Diátaxis](https://diataxis.fr
 ## Aperçu du projet
 
 ...
+
+**Auteur**: Sylvain PHAM
