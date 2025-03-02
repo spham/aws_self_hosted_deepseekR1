@@ -360,4 +360,4 @@ Ce projet est distribué sous licence MIT. Voir le fichier [LICENSE](./LICENSE) 
 
 ## Contact
 
-Pour toute question ou suggestion, veuillez ouvrir une issue sur ce dépôt ou contacter l'équipe à [email@example.com](mailto:email@example.com).
+Pour toute question ou suggestion, veuillez ouvrir une issue sur ce dépôt ou contacter l'équipe à [contact@sylvainp.dev](mailto:contact@sylvainp.dev).
