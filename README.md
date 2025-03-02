@@ -181,14 +181,6 @@ GOLANG_VERSION: "1.21"
 PYTHON_VERSION: "3.11"
 ```
 
-## Documentation Additionnelle
-
-* [Ollama Documentation](https://ollama.ai/docs)
-* [DeepSeek R1 Model](https://github.com/deepseek-ai/DeepSeek-LLM)
-* [Next.js Ollama UI](https://github.com/jakobhoeg/nextjs-ollama-llm-ui)
-* [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
-* [Ansible Documentation](https://docs.ansible.com/)
-
 ## Contribution
 
 1. Fork le projet
@@ -287,7 +279,7 @@ server {
   ansible.builtin.apt:
     name: unattended-upgrades
     state: present
-    
+
 - name: Activation des mises à jour automatiques
   ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/20auto-upgrades
@@ -295,3 +287,25 @@ server {
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
 ```
+
+## Documentation complète
+
+Une documentation complète suivant le framework [Diátaxis](https://diataxis.fr/) est disponible dans le [dossier docs](./docs/). Cette documentation est organisée en quatre sections distinctes pour répondre à différents besoins :
+
+- **[Tutoriels](./docs/tutorials/)** : Guides pas à pas pour les débutants
+- **[Guides pratiques](./docs/how-to/)** : Instructions concises pour accomplir des tâches spécifiques
+- **[Référence technique](./docs/reference/)** : Documentation détaillée des composants du système
+- **[Explications](./docs/explanation/)** : Discussions approfondies sur les concepts et choix techniques
+
+### Points d'entrée recommandés
+
+- 🚀 **Première utilisation** : Consultez le [guide de démarrage rapide](./docs/tutorials/quickstart.md)
+- 🔧 **Maintenance** : Voir le [guide de maintenance](./docs/how-to/maintenance.md)
+- 💰 **Optimisation des coûts** : Consultez le [guide d'optimisation des coûts](./docs/how-to/cost-opt.md)
+- 🔒 **Sécurité** : Voir le [guide de sécurisation](./docs/how-to/security.md)
+- 🧪 **Tests** : Consultez le [guide des tests](./docs/how-to/testing.md)
+- 🤔 **Pourquoi ces choix techniques ?** : Voir les [alternatives technologiques](./docs/explanation/alternatives.md)
+
+## Aperçu du projet
+
+...
