@@ -1,18 +1,18 @@
-h1. Projet DeepSeek R1 sur AWS EC2 avec Terraform et Ansible
+# Projet DeepSeek R1 sur AWS EC2 avec Terraform et Ansible
 
-h2. Objectif du Projet
+## Objectif du Projet
 
-p. Déploiement automatisé de DeepSeek R1 sur une instance AWS EC2 g5.xlarge en utilisant une approche Infrastructure as Code (IaC). Le projet utilise des instances spot pour optimiser les coûts.
+Déploiement automatisé de DeepSeek R1 sur une instance AWS EC2 g5.xlarge en utilisant une approche Infrastructure as Code (IaC). Le projet utilise des instances spot pour optimiser les coûts.
 
-h2. Architecture
+## Architecture
 
-* *Infrastructure*: AWS EC2 g5.xlarge (GPU) en région eu-west-1 (Irlande)
-* *Modèle*: DeepSeek R1 via Ollama
-* *Interface*: UI Web Next.js
-* *Outils IaC*: Terraform 1.11 + Ansible 11
-* *CI/CD*: GitLab CI
+* **Infrastructure**: AWS EC2 g5.xlarge (GPU) en région eu-west-1 (Irlande)
+* **Modèle**: DeepSeek R1 via Ollama
+* **Interface**: UI Web Next.js
+* **Outils IaC**: Terraform 1.11 + Ansible 11
+* **CI/CD**: GitLab CI
 
-h2. Prérequis
+## Prérequis
 
 * AWS CLI configuré
 * Terraform >= 1.11
@@ -21,9 +21,9 @@ h2. Prérequis
 * AMI Ubuntu 24.04 LTS ARM64
 * Go 1.21 (pour les tests)
 
-h2. Structure du Projet
+## Structure du Projet
 
-bc. 
+```
 project/
 ├── terraform/
 │   ├── main.tf         # Configuration EC2 et sécurité
@@ -38,30 +38,33 @@ project/
 │           ├── tasks/  # Tâches Ansible
 │           └── molecule/ # Tests du rôle avec Molecule
 └── .gitlab-ci.yml      # Pipeline CI/CD
+```
 
-h2. Déploiement
+## Déploiement
 
-h3. 1. Préparation des variables
+### 1. Préparation des variables
 
-bc. 
+```
 # Créer un fichier terraform.tfvars
 aws_region     = "eu-west-1"  # Irlande, où g5.xlarge est disponible
 ami_id         = "ami-0e2d98d2a1e9f0169"  # AMI Ubuntu 24.04 ARM64
 key_name       = "votre-key"
 allowed_ip     = "x.x.x.x/32" # Votre IP CIDR
 max_spot_price = "1.5"        # Prix max instance spot
+```
 
-h3. 2. Déploiement de l'infrastructure
+### 2. Déploiement de l'infrastructure
 
-bc. 
+```
 cd terraform
 terraform init
 terraform plan
 terraform apply
+```
 
-h3. 3. Configuration de l'inventaire Ansible
+### 3. Configuration de l'inventaire Ansible
 
-bc. 
+```
 # ansible/inventory.yml
 ollama_instances:
   hosts:
@@ -69,141 +72,153 @@ ollama_instances:
       ansible_host: <EC2_PUBLIC_IP>  # Utiliser l'output Terraform
       ansible_user: ubuntu
       ansible_ssh_private_key_file: /path/to/key.pem
+```
 
-h3. 4. Déploiement de l'application
+### 4. Déploiement de l'application
 
-bc. 
+```
 cd ../ansible
 ansible-playbook -i inventory.yml playbook.yml
+```
 
-h2. Tests
+## Tests
 
-h3. Tests Terraform
+### Tests Terraform
 
-bc. 
+```
 cd terraform/test
 go test -v -timeout 30m
+```
 
-h3. Tests Ansible
+### Tests Ansible
 
-bc. 
+```
 cd ansible/roles/ollama
 molecule test
+```
 
-h3. Exécution de tous les tests
+### Exécution de tous les tests
 
-bc. 
+```
 ./scripts/run_tests.sh
+```
 
-h2. Pipeline CI/CD
+## Pipeline CI/CD
 
 Le projet inclut une pipeline GitLab CI avec les étapes suivantes:
 
-* *test*: Exécute les tests Terraform et Ansible
-* *validate*: Valide la syntaxe Terraform
-* *plan*: Planifie les changements d'infrastructure
-* *apply*: Applique les changements (manuel)
-* *deploy*: Déploie l'application avec Ansible (manuel)
-* *destroy*: Détruit l'infrastructure (manuel)
+* **test**: Exécute les tests Terraform et Ansible
+* **validate**: Valide la syntaxe Terraform
+* **plan**: Planifie les changements d'infrastructure
+* **apply**: Applique les changements (manuel)
+* **deploy**: Déploie l'application avec Ansible (manuel)
+* **destroy**: Détruit l'infrastructure (manuel)
 
-h3. Variables d'environnement GitLab CI
+### Variables d'environnement GitLab CI
 
 * AWS_ACCESS_KEY_ID
 * AWS_SECRET_ACCESS_KEY
 * SSH_PRIVATE_KEY
 
-h2. Optimisation des Coûts
+## Optimisation des Coûts
 
 * Instance Spot EC2 (économie jusqu'à 70%)
 * Volume gp3 pour un meilleur rapport coût/performance
 * Sécurité groupe restreint aux IPs nécessaires
 * Arrêt automatique de l'instance pendant les périodes d'inactivité
 
-h2. Monitoring
+## Monitoring
 
 * PM2 pour la gestion des processus Node.js
 * CloudWatch pour les métriques EC2
-* Logs Ollama dans @/var/log/ollama@
+* Logs Ollama dans `/var/log/ollama`
 
-h2. Arrêt des Ressources
+## Arrêt des Ressources
 
-bc. 
+```
 cd terraform
 terraform destroy
+```
 
-h2. Points d'Attention
+## Points d'Attention
 
-h3. Coûts:
+### Coûts:
 * Instance g5.xlarge (~$734/mois à la demande, ~$220-300/mois en spot)
 * Stockage gp3 100GB (~$10/mois)
-* *IMPORTANT*: Surveillez attentivement votre utilisation pour éviter des coûts imprévus
+* **IMPORTANT**: Surveillez attentivement votre utilisation pour éviter des coûts imprévus
 
-h3. Sécurité:
+### Sécurité:
 * Accès limité par IP
 * Ports exposés: 22 (SSH), 3000 (UI)
 
-h3. Performance:
+### Performance:
 * Modèle ~20GB en RAM
 * Temps de démarrage ~5-10min
 
-h2. Maintenance
+## Maintenance
 
-h3. Mise à jour du modèle:
+### Mise à jour du modèle:
 
-bc. ollama pull deepseek-r1:latest
+```
+ollama pull deepseek-r1:latest
+```
 
-h3. Redémarrage de l'UI:
+### Redémarrage de l'UI:
 
-bc. pm2 restart ollama-ui
+```
+pm2 restart ollama-ui
+```
 
-h3. Mise à jour des versions:
+### Mise à jour des versions:
 
-Pour mettre à jour les versions des outils, modifiez les variables dans @.gitlab-ci.yml@:
+Pour mettre à jour les versions des outils, modifiez les variables dans `.gitlab-ci.yml`:
 
-bc. 
+```
 TERRAFORM_VERSION: "1.11"
 ANSIBLE_VERSION: "11.0.0"
 MOLECULE_VERSION: "6.0.2"
 GOLANG_VERSION: "1.21"
 PYTHON_VERSION: "3.11"
+```
 
-h2. Documentation Additionnelle
+## Documentation Additionnelle
 
-* "Ollama Documentation":https://ollama.ai/docs
-* "DeepSeek R1 Model":https://github.com/deepseek-ai/DeepSeek-LLM
-* "Next.js Ollama UI":https://github.com/jakobhoeg/nextjs-ollama-llm-ui
-* "Terraform Documentation":https://developer.hashicorp.com/terraform/docs
-* "Ansible Documentation":https://docs.ansible.com/
+* [Ollama Documentation](https://ollama.ai/docs)
+* [DeepSeek R1 Model](https://github.com/deepseek-ai/DeepSeek-LLM)
+* [Next.js Ollama UI](https://github.com/jakobhoeg/nextjs-ollama-llm-ui)
+* [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
+* [Ansible Documentation](https://docs.ansible.com/)
 
-h2. Contribution
+## Contribution
 
-# Fork le projet
-# Créer une branche (@git checkout -b feature/amelioration@)
-# Commit (@git commit -am 'Ajout de fonctionnalité'@)
-# Push (@git push origin feature/amelioration@)
-# Créer une Pull Request 
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/amelioration`)
+3. Commit (`git commit -am 'Ajout de fonctionnalité'`)
+4. Push (`git push origin feature/amelioration`)
+5. Créer une Pull Request 
 
-h2. Avertissements de Sécurité
+## Avertissements de Sécurité
 
-p. *ATTENTION*: Ce projet déploie une infrastructure cloud avec un modèle d'IA puissant. Veuillez prendre en compte les considérations de sécurité suivantes:
+**ATTENTION**: Ce projet déploie une infrastructure cloud avec un modèle d'IA puissant. Veuillez prendre en compte les considérations de sécurité suivantes:
 
-h3. Groupes de Sécurité AWS:
+### Groupes de Sécurité AWS:
 
 * Le groupe de sécurité par défaut n'expose que les ports 22 (SSH) et 3000 (UI Web)
-* *PERSONNALISATION NÉCESSAIRE*: Modifiez la variable @allowed_ip@ pour restreindre l'accès à votre IP uniquement
+* **PERSONNALISATION NÉCESSAIRE**: Modifiez la variable `allowed_ip` pour restreindre l'accès à votre IP uniquement
 * Ne laissez JAMAIS les ports ouverts à toutes les IPs (0.0.0.0/0) en production
 * Exemple de configuration sécurisée:
 
-bc. 
+```
 allowed_ip = "123.45.67.89/32"  # Remplacez par votre IP publique
+```
 
-h3. Authentification:
+### Authentification:
 
 * L'interface web n'a pas d'authentification par défaut
 * Considérez l'ajout d'une authentification basique ou d'un proxy inverse avec authentification
 * Exemple avec Nginx et authentification basique:
 
-bc. 
+```
 server {
     listen 80;
     server_name ollama.example.com;
@@ -216,21 +231,22 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 }
+```
 
-h3. Clés SSH:
+### Clés SSH:
 
 * Utilisez des clés SSH fortes (ED25519 ou RSA 4096 bits minimum)
 * Ne partagez jamais vos clés privées
 * Considérez l'utilisation d'un agent SSH avec des clés protégées par mot de passe
 
-h3. Secrets dans CI/CD:
+### Secrets dans CI/CD:
 
 * Les variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY et SSH_PRIVATE_KEY sont des secrets sensibles
 * Utilisez les variables masquées de GitLab CI
 * Limitez les permissions IAM au strict minimum nécessaire
 * Exemple de politique IAM restrictive:
 
-bc. 
+```
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -252,20 +268,21 @@ bc.
     }
   ]
 }
+```
 
-h3. Données Sensibles:
+### Données Sensibles:
 
 * Le modèle DeepSeek R1 traitera toutes les entrées fournies
 * Ne soumettez pas de données personnelles ou confidentielles
 * Considérez les implications légales (RGPD, etc.) si vous traitez des données d'utilisateurs
 
-h3. Mises à jour de Sécurité:
+### Mises à jour de Sécurité:
 
 * Configurez des mises à jour automatiques pour le système d'exploitation
 * Vérifiez régulièrement les vulnérabilités dans les dépendances
 * Ajoutez cette tâche à votre playbook Ansible:
 
-bc. 
+```
 - name: Configuration des mises à jour de sécurité automatiques
   ansible.builtin.apt:
     name: unattended-upgrades
@@ -275,4 +292,5 @@ bc.
     dest: /etc/apt/apt.conf.d/20auto-upgrades
     content: |
       APT::Periodic::Update-Package-Lists "1";
-      APT::Periodic::Unattended-Upgrade "1"; 
+      APT::Periodic::Unattended-Upgrade "1";
+```
