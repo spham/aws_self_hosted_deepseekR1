@@ -308,7 +308,24 @@ Une documentation complète suivant le framework [Diátaxis](https://diataxis.fr
 
 ## Aperçu du projet
 
-![Architecture du projet](./docs/images/architecture.png)
+```
+┌─────────────────┐     ┌─────────────────────────────────────┐
+│                 │     │                                     │
+│  Utilisateur    │     │  Instance EC2 g5.xlarge (AWS)       │
+│                 │     │  ┌─────────────┐  ┌──────────────┐  │
+│  ┌───────────┐  │     │  │             │  │              │  │
+│  │ Navigateur│◄─┼─────┼─►│ Next.js UI  │◄─┤ Ollama API   │  │
+│  └───────────┘  │     │  │ (Port 3000) │  │ (Port 11434) │  │
+│                 │     │  │             │  │              │  │
+└─────────────────┘     │  └─────────────┘  └──────┬───────┘  │
+                        │                          │          │
+                        │                    ┌─────▼──────┐   │
+                        │                    │ DeepSeek R1 │   │
+                        │                    │   Modèle    │   │
+                        │                    └────────────┘    │
+                        │                                     │
+                        └─────────────────────────────────────┘
+```
 
 Ce projet permet de déployer rapidement et de manière reproductible le modèle DeepSeek R1 sur AWS EC2 en utilisant:
 
