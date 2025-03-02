@@ -1,0 +1,53 @@
+---
+- name: Installation des dépendances
+  apt:
+    name: 
+      - curl
+      - git
+    update_cache: yes
+
+- name: Installation de Ollama
+  shell: curl -L https://ollama.ai/install.sh | sh
+  args:
+    creates: /usr/local/bin/ollama
+
+- name: Installation de NVM
+  shell: >
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  args:
+    creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+- name: Installation de Node.js
+  shell: |
+    source {{ ansible_env.HOME }}/.nvm/nvm.sh
+    nvm install 20
+  args:
+    executable: /bin/bash
+
+- name: Téléchargement du modèle DeepSeek R1
+  command: ollama pull deepseek-r1
+
+- name: Clone du repo UI
+  git:
+    repo: https://github.com/jakobhoeg/nextjs-ollama-llm-ui
+    dest: /opt/nextjs-ollama-llm-ui
+
+- name: Installation des dépendances npm
+  npm:
+    path: /opt/nextjs-ollama-llm-ui
+    state: present
+
+- name: Installation de PM2
+  npm:
+    name: pm2
+    global: yes
+
+- name: Build de l'application
+  shell: |
+    cd /opt/nextjs-ollama-llm-ui
+    npm run build
+
+- name: Démarrage de l'application avec PM2
+  shell: |
+    cd /opt/nextjs-ollama-llm-ui
+    pm2 start npm --name "ollama-ui" -- run start 

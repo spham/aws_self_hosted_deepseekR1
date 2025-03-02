@@ -1,0 +1,5 @@
+---
+- hosts: ollama_instances
+  become: yes
+  roles:
+    - ollama 
