@@ -1,0 +1,30 @@
+---
+- name: Installer AWS CLI
+  apt:
+    name: awscli
+    state: present
+
+- name: Créer un script d'arrêt automatique
+  copy:
+    dest: /usr/local/bin/auto-shutdown.sh
+    mode: 0755
+    content: |
+      #!/bin/bash
+      # Script pour arrêter l'instance après une période d'inactivité
+      
+      IDLE_TIME=$(uptime | awk '{print $10}' | cut -d ',' -f1)
+      INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+      REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+      
+      if (( $(echo "$IDLE_TIME > 1.0" | bc -l) )); then
+        # Vérifier si aucun utilisateur n'est connecté à l'UI
+        if ! netstat -an | grep ESTABLISHED | grep :3000 > /dev/null; then
+          aws ec2 stop-instances --instance-ids $INSTANCE_ID --region $REGION
+        fi
+      fi
+
+- name: Ajouter le script au crontab
+  cron:
+    name: "auto-shutdown"
+    minute: "*/30"
+    job: "/usr/local/bin/auto-shutdown.sh" 

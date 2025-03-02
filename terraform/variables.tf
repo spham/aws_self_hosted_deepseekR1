@@ -19,5 +19,6 @@ variable "allowed_ip" {
 
 variable "max_spot_price" {
   description = "Prix maximum pour l'instance spot"
-  default     = "0.5"
+  # Le prix spot peut être environ 70% moins cher que le prix à la demande
+  default = "1.5" # Ajusté pour refléter un prix spot plus réaliste pour g5.xlarge
 } 

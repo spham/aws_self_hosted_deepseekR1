@@ -39,11 +39,11 @@ h3. 1. Préparation des variables
 
 bc. 
 # Créer un fichier terraform.tfvars
-aws_region     = "us-east-1"
-ami_id         = "ami-xxxxx"  # AMI Ubuntu 24.04 ARM64
+aws_region     = "eu-west-1"  # Irlande, où g5.xlarge est disponible
+ami_id         = "ami-0e2d98d2a1e9f0169"  # AMI Ubuntu 24.04 ARM64
 key_name       = "votre-key"
 allowed_ip     = "x.x.x.x/32" # Votre IP CIDR
-max_spot_price = "0.5"        # Prix max instance spot
+max_spot_price = "1.5"        # Prix max instance spot
 
 h3. 2. Déploiement de l'infrastructure
 
@@ -72,9 +72,10 @@ ansible-playbook -i inventory.yml playbook.yml
 
 h2. Optimisation des Coûts
 
-* Instance Spot EC2 (économie jusqu'à 90%)
+* Instance Spot EC2 (économie jusqu'à 70%)
 * Volume gp3 pour un meilleur rapport coût/performance
 * Sécurité groupe restreint aux IPs nécessaires
+* Arrêt automatique de l'instance pendant les périodes d'inactivité
 
 h2. Monitoring
 
@@ -91,8 +92,9 @@ terraform destroy
 h2. Points d'Attention
 
 h3. Coûts:
-* Instance g5.xlarge (~0.50$/h en spot)
-* Stockage gp3 100GB (~10$/mois)
+* Instance g5.xlarge (~$734/mois à la demande, ~$220-300/mois en spot)
+* Stockage gp3 100GB (~$10/mois)
+* *IMPORTANT*: Surveillez attentivement votre utilisation pour éviter des coûts imprévus
 
 h3. Sécurité:
 * Accès limité par IP
