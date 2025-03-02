@@ -270,7 +270,6 @@ bc.
   ansible.builtin.apt:
     name: unattended-upgrades
     state: present
-
 - name: Activation des mises à jour automatiques
   ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/20auto-upgrades
