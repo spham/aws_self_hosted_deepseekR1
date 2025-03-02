@@ -1,6 +1,6 @@
 ---
 - name: Installation des dépendances
-  apt:
+  ansible.builtin.apt:
     name: 
       - curl
       - git
@@ -9,51 +9,52 @@
     update_cache: yes
 
 - name: Installation de Ollama
-  shell: curl -L https://ollama.ai/install.sh | sh
+  ansible.builtin.shell: curl -L https://ollama.ai/install.sh | sh
   args:
     creates: /usr/local/bin/ollama
 
 - name: Installation de NVM
-  shell: >
+  ansible.builtin.shell: >
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   args:
     creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
 
 - name: Installation de Node.js
-  shell: |
+  ansible.builtin.shell: |
     source {{ ansible_env.HOME }}/.nvm/nvm.sh
     nvm install 20
   args:
     executable: /bin/bash
 
 - name: Téléchargement du modèle DeepSeek R1
-  command: ollama pull deepseek-r1
+  ansible.builtin.command: ollama pull deepseek-r1
   when: not skip_model_download | default(false)
 
 - name: Clone du repo UI
-  git:
+  ansible.builtin.git:
     repo: https://github.com/jakobhoeg/nextjs-ollama-llm-ui
     dest: /opt/nextjs-ollama-llm-ui
 
 - name: Installation des dépendances npm
-  npm:
+  community.general.npm:
     path: /opt/nextjs-ollama-llm-ui
     state: present
 
 - name: Installation de PM2
-  npm:
+  community.general.npm:
     name: pm2
     global: yes
 
 - name: Build de l'application
-  shell: |
+  ansible.builtin.shell: |
     cd /opt/nextjs-ollama-llm-ui
     npm run build
 
 - name: Démarrage de l'application avec PM2
-  shell: |
+  ansible.builtin.shell: |
     cd /opt/nextjs-ollama-llm-ui
     pm2 start npm --name "ollama-ui" -- run start
 
 # Inclure les tâches d'optimisation des coûts
-- include_tasks: cost_optimization.yml 
+- name: Inclure les tâches d'optimisation des coûts
+  ansible.builtin.include_tasks: cost_optimization.yml 

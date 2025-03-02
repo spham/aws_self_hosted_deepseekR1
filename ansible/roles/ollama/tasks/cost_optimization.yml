@@ -1,11 +1,11 @@
 ---
 - name: Installer AWS CLI
-  apt:
+  ansible.builtin.apt:
     name: awscli
     state: present
 
 - name: Créer un script d'arrêt automatique
-  copy:
+  ansible.builtin.copy:
     dest: /usr/local/bin/auto-shutdown.sh
     mode: 0755
     content: |
@@ -24,7 +24,7 @@
       fi
 
 - name: Ajouter le script au crontab
-  cron:
+  ansible.builtin.cron:
     name: "auto-shutdown"
     minute: "*/30"
     job: "/usr/local/bin/auto-shutdown.sh" 

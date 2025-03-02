@@ -2,9 +2,11 @@
 - name: Converge
   hosts: all
   become: true
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   tasks:
     - name: "Include ollama role"
-      include_role:
+      ansible.builtin.include_role:
         name: "ollama"
       vars:
         # Simuler l'installation sans télécharger le modèle complet

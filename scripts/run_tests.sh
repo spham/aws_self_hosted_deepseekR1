@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Vérifier les versions
+echo "Vérification des versions..."
+terraform version | head -n 1
+ansible --version | head -n 1
+
 echo "Exécution des tests Terraform..."
 cd terraform/test
 go test -v -timeout 30m

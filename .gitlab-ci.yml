@@ -21,11 +21,15 @@ cache:
 # Tests unitaires
 test:
   stage: test
-  image: golang:1.20
+  image: golang:1.21
   before_script:
     - apt-get update && apt-get install -y python3-pip
-    - pip install molecule molecule-docker ansible
+    - pip install ansible==11.0.0 molecule==6.0.2 molecule-docker ansible-lint yamllint
     - cd ${TF_ROOT}/test && go mod download
+    # Installer Terraform 1.11
+    - wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+    - apt-get update && apt-get install -y terraform=1.11.0
   script:
     - cd ${CI_PROJECT_DIR}
     - chmod +x scripts/run_tests.sh
@@ -36,7 +40,7 @@ test:
 # Validation de la syntaxe Terraform
 validate:
   stage: validate
-  image: hashicorp/terraform:latest
+  image: hashicorp/terraform:1.11
   script:
     - cd ${TF_ROOT}
     - terraform init -backend=false
@@ -47,7 +51,7 @@ validate:
 # Planification des changements Terraform
 plan:
   stage: plan
-  image: hashicorp/terraform:latest
+  image: hashicorp/terraform:1.11
   script:
     - cd ${TF_ROOT}
     - terraform init
@@ -62,7 +66,7 @@ plan:
 # Application des changements Terraform
 apply:
   stage: apply
-  image: hashicorp/terraform:latest
+  image: hashicorp/terraform:1.11
   script:
     - cd ${TF_ROOT}
     - terraform init
@@ -81,7 +85,10 @@ apply:
 # Déploiement avec Ansible
 deploy:
   stage: deploy
-  image: cytopia/ansible:latest
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get install -y openssh-client jq
+    - pip install ansible==11.0.0
   script:
     - cd ${ANSIBLE_ROOT}
     - mkdir -p ~/.ssh
@@ -105,7 +112,7 @@ deploy:
 # Destruction de l'infrastructure
 destroy:
   stage: destroy
-  image: hashicorp/terraform:latest
+  image: hashicorp/terraform:1.11
   script:
     - cd ${TF_ROOT}
     - terraform init
